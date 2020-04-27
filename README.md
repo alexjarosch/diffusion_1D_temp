@@ -1,2 +1,3 @@
 # diffusion_1D_temp
-Thermal diffusion model with FDM in 1D, applied to ground temperatures
+
+Thermal diffusion model untilizing the finite difference method in 1D. It uses a central scheme in space and a froward Euler time-stepping scheme to progress time, stabalized with a 
