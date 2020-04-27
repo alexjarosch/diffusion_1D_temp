@@ -6,10 +6,10 @@ import tkinter as tk
 """A 1D implementation of thermal conductivity through soil and air"""
 
 __author__ = "Alexander H. Jarosch (research@alexj.at)"
-__date__ = "2020-01-29 --"
+__date__ = "2020-01-29 -- 2020-04-09"
 __copyright__ = "Copyright (C) 2020 ThetaFrame Solutions"
 __license__ = "GNU GPL Version 3"
-__version__ = "3.1"
+__version__ = "4.10"
 
 """
 This script is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ sec_in_year = 365.25 * 24 * 3600
 
 window = tk.Tk()
 window.title("Cave Heat Conduction Model with Snow")
-window.geometry('700x500')
+window.geometry('700x600')
 
 # input for depth
 lbl_dc = tk.Label(window, text="Depth to Simulate [m]")
@@ -108,6 +108,37 @@ lbl_intP.grid(column=0, row=10, sticky="W")
 txt_intP = tk.Entry(window, width=10)
 txt_intP.insert(tk.END, '50')
 txt_intP.grid(column=1, row=10)
+
+# check if you want to see the points in the line
+pltpoints = tk.IntVar()
+cb_prtP = tk.Checkbutton(window, text='Plot model points', variable=pltpoints, onvalue=1, offvalue=0)
+cb_prtP.grid(column=0, row=11, sticky="W")
+
+# check if you want to see the points in the line
+pltintT = tk.IntVar()
+cb_prtiT = tk.Checkbutton(window, text='Plot initial TMP profile', variable=pltintT, onvalue=1, offvalue=0)
+cb_prtiT.grid(column=0, row=12, sticky="W")
+
+# check if you want to see the points in the line
+pltLeg = tk.IntVar()
+cb_prtLeg = tk.Checkbutton(window, text='Plot Legend', variable=pltLeg, onvalue=1, offvalue=0)
+cb_prtLeg.grid(column=0, row=13, sticky="W")
+
+# save solution
+svSol = tk.IntVar()
+cb_svSol = tk.Checkbutton(window, text='Save Final Solution', variable=svSol, onvalue=1, offvalue=0)
+cb_svSol.grid(column=0, row=14, sticky="W")
+txt_svSol = tk.Entry(window, width=20)
+txt_svSol.insert(tk.END, 'solution.txt')
+txt_svSol.grid(column=1, row=14)
+
+# read solution
+rdSol = tk.IntVar()
+cb_rdSol = tk.Checkbutton(window, text='Read Initial TMP Profile', variable=rdSol, onvalue=1, offvalue=0)
+cb_rdSol.grid(column=0, row=15, sticky="W")
+txt_rdSol = tk.Entry(window, width=20)
+txt_rdSol.insert(tk.END, 'solution_in.txt')
+txt_rdSol.grid(column=1, row=15)
 
 
 # forcing with annual cycle
@@ -218,8 +249,13 @@ def clicked():
 
     T_data = np.zeros((Nt+1, Nz))
 
-    # set initial TMP conditions
-    T_data[0, :] = t_init_ground + deltaT_grad*z
+    if rdSol.get() == 1:
+        T_init_read = np.loadtxt(txt_rdSol.get(), delimiter=',')
+        T_data[0, :] = T_init_read
+    else:
+        # set initial TMP conditions
+        T_data[0, :] = t_init_ground + deltaT_grad*z
+
     # lower boundary condition
     # T_data[0, -2] = t_init_ground + deltaT_BC
 
@@ -264,16 +300,34 @@ def clicked():
 
         T_data[n+1, :] = copy.deepcopy(u)
 
-    """ Visuals """
+    # save solution
+
+    if svSol.get() == 1:
+        np.savetxt(txt_svSol.get(), T_data[-2,:], delimiter=',')
+
+
+    # Visuals
+
+    if pltpoints.get() == 0:
+        mstring = ''
+    elif pltpoints.get() == 1:
+        mstring = '.'
+
+    if pltintT.get() == 0:
+        pltrange = range(1, len(t_solve))
+    elif pltintT.get() == 1:
+        pltrange = range(0, len(t_solve))
 
     plt.figure()
     plt.title("TMP with depth")
-    for pidx in range(len(t_solve)):
-        plt.plot(T_data[pidx, :-2], z[:-2], marker='.', label=("Year %d" % t_solve[pidx]))
+    for pidx in pltrange:
+        plt.plot(T_data[pidx, :-2], z[:-2], marker=mstring, label=("Year %d" % t_solve[pidx]))
 
     plt.plot([0, 0], [0, z_total], '--k')
     plt.ylim(z_total, 0)
-    plt.legend()
+    if pltLeg.get() == 1:
+        plt.legend()
+
     plt.xlabel("TMP in C")
     plt.ylabel("Depth in m")
 
@@ -281,37 +335,37 @@ def clicked():
 
 
 lbl_info = tk.Label(window, text="Model Setup Info:")
-lbl_info.grid(column=1, row=11)
+lbl_info.grid(column=1, row=16)
 
 lbl_dz = tk.Label(window, text="Vertical Resolution dz:")
-lbl_dz.grid(column=0, row=12, sticky="W")
+lbl_dz.grid(column=0, row=17, sticky="W")
 lbl_dz2 = tk.Label(window, text="%0.4f m" % (2))
-lbl_dz2.grid(column=1, row=12)
+lbl_dz2.grid(column=1, row=17)
 
 amean_T = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
 lbl_meanT = tk.Label(window, text="Annual Mean Air TMP:")
-lbl_meanT.grid(column=0, row=13, sticky="W")
+lbl_meanT.grid(column=0, row=18, sticky="W")
 lbl_meanT2 = tk.Label(window, text="%0.4f C" % amean_T)
-lbl_meanT2.grid(column=1, row=13)
+lbl_meanT2.grid(column=1, row=18)
 
 btn = tk.Button(window, text="Update Setup / Plot Input", command=updateSP)
-btn.grid(column=1, row=14)
-
-btn = tk.Button(window, text="Update Setup and Run Model", command=clicked)
-btn.grid(column=1, row=16)
+btn.grid(column=1, row=19)
 
 lbl_time = tk.Label(window, text="Model Time:")
-lbl_time.grid(column=0, row=15, sticky="W")
+lbl_time.grid(column=0, row=20, sticky="W")
 lbl_time2 = tk.Label(window, text="%0.4f years" % (0))
-lbl_time2.grid(column=1, row=15)
+lbl_time2.grid(column=1, row=20)
+
+btn = tk.Button(window, text="Update Setup and Run Model", command=clicked)
+btn.grid(column=1, row=21)
 
 lbl_space = tk.Label(window, text="")
-lbl_space.grid(column=0, row=17)
+lbl_space.grid(column=0, row=22)
 
 lbl_space = tk.Label(window, text="")
-lbl_space.grid(column=0, row=18)
+lbl_space.grid(column=0, row=23)
 
-lbl_CR = tk.Label(window, text="Ver. 3.1 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
-lbl_CR.grid(column=1, row=19)
+lbl_CR = tk.Label(window, text="Ver. 4.0 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
+lbl_CR.grid(column=1, row=24)
 
 window.mainloop()
