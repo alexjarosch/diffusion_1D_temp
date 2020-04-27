@@ -7,9 +7,9 @@ import tkinter as tk
 
 __author__ = "Alexander H. Jarosch (research@alexj.at)"
 __date__ = "2020-01-29 --"
-__copyright__ = "Copyright (C) 2020 Alexander H. Jarosch"
+__copyright__ = "Copyright (C) 2020 ThetaFrame Solutions"
 __license__ = "GNU GPL Version 3"
-__version__ = "0.5"
+__version__ = "2.0"
 
 """
 This script is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ along with this script.  If not, see <http://www.gnu.org/licenses/>.
 sec_in_year = 365.25 * 24 * 3600
 
 window = tk.Tk()
-window.title("Cave Heat Conduction Model")
+window.title("Cave Heat Conduction Model with Snow")
 window.geometry('600x500')
 
 # input for depth
@@ -67,47 +67,54 @@ txt_juT = tk.Entry(window, width=10)
 txt_juT.insert(tk.END, '18.0')
 txt_juT.grid(column=1, row=4)
 
+# input for snow delta_tmp
+lbl_sdT = tk.Label(window, text="Snow delta TMP [C]")
+lbl_sdT.grid(column=0, row=5, sticky="W")
+txt_sdT = tk.Entry(window, width=10)
+txt_sdT.insert(tk.END, '7.0')
+txt_sdT.grid(column=1, row=5)
+
 # input for soil temp
 lbl_iTg = tk.Label(window, text="Initial Ground TMP [C]")
-lbl_iTg.grid(column=0, row=5, sticky="W")
+lbl_iTg.grid(column=0, row=6, sticky="W")
 txt_iTg = tk.Entry(window, width=10)
 txt_iTg.insert(tk.END, '0')
-txt_iTg.grid(column=1, row=5)
+txt_iTg.grid(column=1, row=6)
 
 # input for cave temp
 lbl_iTc = tk.Label(window, text="Initial Cave TMP [C]")
-lbl_iTc.grid(column=0, row=6, sticky="W")
+lbl_iTc.grid(column=0, row=7, sticky="W")
 txt_iTc = tk.Entry(window, width=10)
 txt_iTc.insert(tk.END, '-2')
-txt_iTc.grid(column=1, row=6)
+txt_iTc.grid(column=1, row=7)
 
 # input for thermal diffusivity
 lbl_alphaG = tk.Label(window, text="Thermal Diffusivity Ground [m^2 / s]")
-lbl_alphaG.grid(column=0, row=7, sticky="W")
+lbl_alphaG.grid(column=0, row=8, sticky="W")
 txt_alphaG = tk.Entry(window, width=10)
 txt_alphaG.insert(tk.END, ' 3.0e-6')
-txt_alphaG.grid(column=1, row=7)
+txt_alphaG.grid(column=1, row=8)
 
 # input for thermal diffusivity
 lbl_alphaA = tk.Label(window, text="Thermal Diffusivity Air [m^2 / s]")
-lbl_alphaA.grid(column=0, row=8, sticky="W")
+lbl_alphaA.grid(column=0, row=9, sticky="W")
 txt_alphaA = tk.Entry(window, width=10)
 txt_alphaA.insert(tk.END, '1.96e-5')
-txt_alphaA.grid(column=1, row=8)
+txt_alphaA.grid(column=1, row=9)
 
 # input for model runtime
 lbl_rtime = tk.Label(window, text="Model Runtime [years]")
-lbl_rtime.grid(column=0, row=9, sticky="W")
+lbl_rtime.grid(column=0, row=10, sticky="W")
 txt_rtime = tk.Entry(window, width=10)
 txt_rtime.insert(tk.END, '10')
-txt_rtime.grid(column=1, row=9)
+txt_rtime.grid(column=1, row=10)
 
 # input for plot interval
 lbl_intP = tk.Label(window, text="Interval to Plot [years]")
-lbl_intP.grid(column=0, row=10, sticky="W")
+lbl_intP.grid(column=0, row=11, sticky="W")
 txt_intP = tk.Entry(window, width=10)
 txt_intP.insert(tk.END, '1')
-txt_intP.grid(column=1, row=10)
+txt_intP.grid(column=1, row=11)
 
 
 # forcing with annual cycle
@@ -117,6 +124,17 @@ def T_surf(t):
     TMP_amp = (np.abs(jan_mean_tmp) + np.abs(jul_mean_tmp)) / 2
     TMP_now = jan_mean_tmp + TMP_amp * (1 + np.cos(2 * np.pi * 1/sec_in_year * t - np.pi))
     return TMP_now
+
+
+def T_snow(t):
+    snow_amp = float(txt_sdT.get())             # deg C
+    TMP_snow = snow_amp/2 * (1 + np.cos(2 * np.pi * 2/sec_in_year * t))
+    # block out the summer period, which is between 3 and 9 (months)
+    # TMP_snow[np.logical_and(np.mod(t, sec_in_year) >= 7889400.0, np.mod(t, sec_in_year) <= 23668200.0)] = 0.0
+    if np.mod(t, sec_in_year) >= 7889400.0 and np.mod(t, sec_in_year) <= 23668200.0:
+        TMP_snow = 0.0
+
+    return TMP_snow
 
 
 def updateS():
@@ -136,6 +154,42 @@ def updateS():
     lbl_dz2.update()
     lbl_caveP2.configure(text=Nz_cave_txt)
     lbl_caveP2.update()
+
+
+def updateSP():
+    # do tmp info update
+    amean_T_a = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
+    amean_T_txt = "%0.4f C" % amean_T_a
+    lbl_meanT2.configure(text=amean_T_txt)
+    lbl_meanT2.update()
+
+    # do vert res update
+    [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()), retstep=True)
+    z_cave_is = float(txt_dc.get()) + np.arange(dz_is, float(txt_hc.get())+dz_is, dz_is)
+    Nz_cave = len(z_cave_is)
+    dz_txt = "%0.4f m" % dz_is
+    Nz_cave_txt = "%d" % Nz_cave
+    lbl_dz2.configure(text=dz_txt)
+    lbl_dz2.update()
+    lbl_caveP2.configure(text=Nz_cave_txt)
+    lbl_caveP2.update()
+
+    plt.figure()
+    plt.title("Surface TMP forcing")
+    dt_range = sec_in_year/48
+    t_range = np.arange(0, 2*sec_in_year+dt_range, dt_range)
+    TMP_snow_plot = np.zeros(len(t_range))
+    for i in range(len(t_range)):
+        TMP_snow_plot[i] = T_snow(t_range[i])
+
+    plt.plot(t_range/sec_in_year*12, T_surf(t_range), 'b', label="air TMP")
+    plt.plot(t_range/sec_in_year*12, TMP_snow_plot, 'r', label="snow deltaTMP")
+    plt.plot(t_range/sec_in_year*12, T_surf(t_range) + TMP_snow_plot, 'g', label="effective TMP")
+    plt.xlabel("Time in months")
+    plt.ylabel("TMP in C")
+    plt.legend()
+
+    plt.show()
 
 
 def clicked():
@@ -197,7 +251,7 @@ def clicked():
     t_save_sec = t_save * sec_in_year
 
     # set initial profile
-    T_data[0, 0] = T_surf(0)
+    T_data[0, 0] = T_surf(0) + T_snow(0)
 
     # overall time in seconds
     t = 0
@@ -214,7 +268,7 @@ def clicked():
             space_diff = u[index_i_plus] - 2*u[index_i] + u[index_i_minus]
             # boundary conditions and time step
             u[index_i] = u[index_i] + D[index_i]*(dt_use/dz**2)*space_diff
-            u[0] = T_surf(t)
+            u[0] = T_surf(t) + T_snow(t)
             u[Nz-1] = u[Nz-2]
 
             time_info = "%0.4f years" % (t/sec_in_year)
@@ -224,14 +278,6 @@ def clicked():
         T_data[n+1, :] = copy.deepcopy(u)
 
     """ Visuals """
-
-    plt.figure()
-    plt.title("Surface TMP forcing")
-    dt_range = sec_in_year/48
-    t_range = np.arange(0, sec_in_year+dt_range, dt_range)
-    plt.plot(t_range/sec_in_year, T_surf(t_range))
-    plt.xlabel("Time in years")
-    plt.ylabel("TMP in C")
 
     plt.figure()
     plt.title("TMP with depth")
@@ -248,42 +294,42 @@ def clicked():
 
 
 lbl_info = tk.Label(window, text="Model Setup Info:")
-lbl_info.grid(column=1, row=11)
+lbl_info.grid(column=1, row=12)
 
 lbl_dz = tk.Label(window, text="Vertical Resolution dz:")
-lbl_dz.grid(column=0, row=12, sticky="W")
+lbl_dz.grid(column=0, row=13, sticky="W")
 lbl_dz2 = tk.Label(window, text="%0.4f m" % (3))
-lbl_dz2.grid(column=1, row=12)
+lbl_dz2.grid(column=1, row=13)
 
 amean_T = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
-lbl_meanT = tk.Label(window, text="Annual Mean TMP:")
-lbl_meanT.grid(column=0, row=13, sticky="W")
+lbl_meanT = tk.Label(window, text="Annual Mean Air TMP:")
+lbl_meanT.grid(column=0, row=14, sticky="W")
 lbl_meanT2 = tk.Label(window, text="%0.4f C" % amean_T)
-lbl_meanT2.grid(column=1, row=13)
+lbl_meanT2.grid(column=1, row=14)
 
 lbl_caveP = tk.Label(window, text="Points in Cave:")
-lbl_caveP.grid(column=0, row=14, sticky="W")
+lbl_caveP.grid(column=0, row=15, sticky="W")
 lbl_caveP2 = tk.Label(window, text="%d" % 2)
-lbl_caveP2.grid(column=1, row=14)
+lbl_caveP2.grid(column=1, row=15)
 
-btn = tk.Button(window, text="Update Setup", command=updateS)
-btn.grid(column=1, row=15)
+btn = tk.Button(window, text="Update Setup / Plot Input", command=updateSP)
+btn.grid(column=1, row=16)
 
 btn = tk.Button(window, text="Update Setup and Run Model", command=clicked)
-btn.grid(column=1, row=17)
+btn.grid(column=1, row=18)
 
 lbl_time = tk.Label(window, text="Model Time:")
-lbl_time.grid(column=0, row=16, sticky="W")
+lbl_time.grid(column=0, row=17, sticky="W")
 lbl_time2 = tk.Label(window, text="%0.4f years" % (0))
-lbl_time2.grid(column=1, row=16)
-
-lbl_space = tk.Label(window, text="")
-lbl_space.grid(column=0, row=18)
+lbl_time2.grid(column=1, row=17)
 
 lbl_space = tk.Label(window, text="")
 lbl_space.grid(column=0, row=19)
 
-lbl_CR = tk.Label(window, text="Ver. 1.0 - Copyright (C) 2020 Alexander H. Jarosch, GPLv3")
-lbl_CR.grid(column=1, row=20)
+lbl_space = tk.Label(window, text="")
+lbl_space.grid(column=0, row=20)
+
+lbl_CR = tk.Label(window, text="Ver. 2.0 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
+lbl_CR.grid(column=1, row=21)
 
 window.mainloop()
