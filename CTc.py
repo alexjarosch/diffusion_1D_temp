@@ -6,10 +6,10 @@ import tkinter as tk
 """A 1D implementation of thermal conductivity through soil and air"""
 
 __author__ = "Alexander H. Jarosch (research@alexj.at)"
-__date__ = "2020-01-29 -- 2020-04-09"
+__date__ = "2020-01-29 -- 2020-04-16"
 __copyright__ = "Copyright (C) 2020 ThetaFrame Solutions"
 __license__ = "GNU GPL Version 3"
-__version__ = "4.10"
+__version__ = "4.2"
 
 """
 This script is free software: you can redistribute it and/or modify
@@ -162,11 +162,21 @@ def T_snow(t):
 
 
 def updateS():
+    dt_range = sec_in_year/1500
+    t_range = np.arange(0, 2*sec_in_year+dt_range, dt_range)
+    TMP_snow_plot = np.zeros(len(t_range))
+    for i in range(len(t_range)):
+        TMP_snow_plot[i] = T_snow(t_range[i])
+
     # do tmp info update
-    amean_T_a = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
-    amean_T_txt = "%0.4f C" % amean_T_a
+    amean_T_a = np.mean(T_surf(t_range))
+    amean_T_eff = np.mean(T_surf(t_range) + TMP_snow_plot)
+    amean_T_txt = "%0.2f C" % amean_T_a
+    amean_Te_txt = "%0.2f C" % amean_T_eff
     lbl_meanT2.configure(text=amean_T_txt)
     lbl_meanT2.update()
+    lbl_meanT2e.configure(text=amean_Te_txt)
+    lbl_meanT2e.update()
 
     # do vert res update
     [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()), retstep=True)
@@ -176,11 +186,21 @@ def updateS():
 
 
 def updateSP():
+    dt_range = sec_in_year/1500
+    t_range = np.arange(0, 2*sec_in_year+dt_range, dt_range)
+    TMP_snow_plot = np.zeros(len(t_range))
+    for i in range(len(t_range)):
+        TMP_snow_plot[i] = T_snow(t_range[i])
+
     # do tmp info update
-    amean_T_a = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
-    amean_T_txt = "%0.4f C" % amean_T_a
+    amean_T_a = np.mean(T_surf(t_range))
+    amean_T_eff = np.mean(T_surf(t_range) + TMP_snow_plot)
+    amean_T_txt = "%0.2f C" % amean_T_a
+    amean_Te_txt = "%0.2f C" % amean_T_eff
     lbl_meanT2.configure(text=amean_T_txt)
     lbl_meanT2.update()
+    lbl_meanT2e.configure(text=amean_Te_txt)
+    lbl_meanT2e.update()
 
     # do vert res update
     [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()), retstep=True)
@@ -190,12 +210,6 @@ def updateSP():
 
     plt.figure()
     plt.title("Surface TMP forcing")
-    dt_range = sec_in_year/48
-    t_range = np.arange(0, 2*sec_in_year+dt_range, dt_range)
-    TMP_snow_plot = np.zeros(len(t_range))
-    for i in range(len(t_range)):
-        TMP_snow_plot[i] = T_snow(t_range[i])
-
     plt.plot(t_range/sec_in_year*12, T_surf(t_range), 'b', label="air TMP")
     plt.plot(t_range/sec_in_year*12, TMP_snow_plot, 'r', label="snow deltaTMP")
     plt.plot(t_range/sec_in_year*12, T_surf(t_range) + TMP_snow_plot, 'g', label="effective TMP")
@@ -345,27 +359,32 @@ lbl_dz2.grid(column=1, row=17)
 amean_T = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
 lbl_meanT = tk.Label(window, text="Annual Mean Air TMP:")
 lbl_meanT.grid(column=0, row=18, sticky="W")
-lbl_meanT2 = tk.Label(window, text="%0.4f C" % amean_T)
+lbl_meanT2 = tk.Label(window, text="%0.2f C" % amean_T)
 lbl_meanT2.grid(column=1, row=18)
 
+lbl_meanTe = tk.Label(window, text="Annual Mean Effective TMP:")
+lbl_meanTe.grid(column=0, row=19, sticky="W")
+lbl_meanT2e = tk.Label(window, text="%0.2f C" % amean_T)
+lbl_meanT2e.grid(column=1, row=19)
+
 btn = tk.Button(window, text="Update Setup / Plot Input", command=updateSP)
-btn.grid(column=1, row=19)
+btn.grid(column=1, row=20)
 
 lbl_time = tk.Label(window, text="Model Time:")
-lbl_time.grid(column=0, row=20, sticky="W")
+lbl_time.grid(column=0, row=21, sticky="W")
 lbl_time2 = tk.Label(window, text="%0.4f years" % (0))
-lbl_time2.grid(column=1, row=20)
+lbl_time2.grid(column=1, row=21)
 
 btn = tk.Button(window, text="Update Setup and Run Model", command=clicked)
-btn.grid(column=1, row=21)
-
-lbl_space = tk.Label(window, text="")
-lbl_space.grid(column=0, row=22)
+btn.grid(column=1, row=22)
 
 lbl_space = tk.Label(window, text="")
 lbl_space.grid(column=0, row=23)
 
-lbl_CR = tk.Label(window, text="Ver. 4.0 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
-lbl_CR.grid(column=1, row=24)
+lbl_space = tk.Label(window, text="")
+lbl_space.grid(column=0, row=24)
+
+lbl_CR = tk.Label(window, text="Ver. 4.2 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
+lbl_CR.grid(column=1, row=25)
 
 window.mainloop()
