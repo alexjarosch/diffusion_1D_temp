@@ -2,14 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import tkinter as tk
+from tkinter import ttk
 
 """A 1D implementation of thermal conductivity through soil and air"""
 
 __author__ = "Alexander H. Jarosch (research@alexj.at)"
-__date__ = "2020-01-29 -- 2020-04-16"
+__date__ = "2020-01-29 -- 2020-07-03"
 __copyright__ = "Copyright (C) 2020 ThetaFrame Solutions"
 __license__ = "GNU GPL Version 3"
-__version__ = "4.2"
+__version__ = "6.0"
 
 """
 This script is free software: you can redistribute it and/or modify
@@ -30,7 +31,7 @@ along with this script.  If not, see <http://www.gnu.org/licenses/>.
 sec_in_year = 365.25 * 24 * 3600
 
 window = tk.Tk()
-window.title("Cave Heat Conduction Model with Snow")
+window.title("Cave Heat Conduction Model with Snow | ver 6.0")
 window.geometry('700x600')
 
 # input for depth
@@ -111,22 +112,26 @@ txt_intP.grid(column=1, row=10)
 
 # check if you want to see the points in the line
 pltpoints = tk.IntVar()
-cb_prtP = tk.Checkbutton(window, text='Plot model points', variable=pltpoints, onvalue=1, offvalue=0)
+cb_prtP = tk.Checkbutton(window, text='Plot model points', variable=pltpoints,
+                         onvalue=1, offvalue=0)
 cb_prtP.grid(column=0, row=11, sticky="W")
 
 # check if you want to see the points in the line
 pltintT = tk.IntVar()
-cb_prtiT = tk.Checkbutton(window, text='Plot initial TMP profile', variable=pltintT, onvalue=1, offvalue=0)
+cb_prtiT = tk.Checkbutton(window, text='Plot initial TMP profile',
+                          variable=pltintT, onvalue=1, offvalue=0)
 cb_prtiT.grid(column=0, row=12, sticky="W")
 
 # check if you want to see the points in the line
 pltLeg = tk.IntVar()
-cb_prtLeg = tk.Checkbutton(window, text='Plot Legend', variable=pltLeg, onvalue=1, offvalue=0)
+cb_prtLeg = tk.Checkbutton(window, text='Plot Legend', variable=pltLeg,
+                           onvalue=1, offvalue=0)
 cb_prtLeg.grid(column=0, row=13, sticky="W")
 
 # save solution
 svSol = tk.IntVar()
-cb_svSol = tk.Checkbutton(window, text='Save Final Solution', variable=svSol, onvalue=1, offvalue=0)
+cb_svSol = tk.Checkbutton(window, text='Save Final Solution', variable=svSol,
+                          onvalue=1, offvalue=0)
 cb_svSol.grid(column=0, row=14, sticky="W")
 txt_svSol = tk.Entry(window, width=20)
 txt_svSol.insert(tk.END, 'solution.txt')
@@ -134,11 +139,20 @@ txt_svSol.grid(column=1, row=14)
 
 # read solution
 rdSol = tk.IntVar()
-cb_rdSol = tk.Checkbutton(window, text='Read Initial TMP Profile', variable=rdSol, onvalue=1, offvalue=0)
+cb_rdSol = tk.Checkbutton(window, text='Read Initial TMP Profile',
+                          variable=rdSol, onvalue=1, offvalue=0)
 cb_rdSol.grid(column=0, row=15, sticky="W")
 txt_rdSol = tk.Entry(window, width=20)
 txt_rdSol.insert(tk.END, 'solution_in.txt')
 txt_rdSol.grid(column=1, row=15)
+
+lbl_Tplot = tk.Label(window, text="Which TMP to plot:")
+lbl_Tplot.grid(column=0, row=16, sticky="W")
+box_Tplot = ttk.Combobox(window, values=["annual mean",
+                                         "january",
+                                         "july"], width=19)
+box_Tplot.grid(column=1, row=16)
+box_Tplot.current(0)
 
 
 # forcing with annual cycle
@@ -146,7 +160,7 @@ def T_surf(t):
     jan_mean_tmp = float(txt_jaT.get())      # deg C
     jul_mean_tmp = float(txt_juT.get())      # deg C
     TMP_amp = (np.abs(jan_mean_tmp) + np.abs(jul_mean_tmp)) / 2
-    TMP_now = jan_mean_tmp + TMP_amp * (1 + np.cos(2 * np.pi * 1/sec_in_year * t - np.pi))
+    TMP_now = jan_mean_tmp+TMP_amp*(1+np.cos(2*np.pi*1/sec_in_year*t-np.pi))
     return TMP_now
 
 
@@ -154,7 +168,8 @@ def T_snow(t):
     snow_amp = float(txt_sdT.get())             # deg C
     TMP_snow = snow_amp/2 * (1 + np.cos(2 * np.pi * 2/sec_in_year * t))
     # block out the summer period, which is between 3 and 9 (months)
-    # TMP_snow[np.logical_and(np.mod(t, sec_in_year) >= 7889400.0, np.mod(t, sec_in_year) <= 23668200.0)] = 0.0
+    # TMP_snow[np.logical_and(np.mod(t, sec_in_year) >= 7889400.0,
+    # np.mod(t, sec_in_year) <= 23668200.0)] = 0.0
     if np.mod(t, sec_in_year) >= 7889400.0 and np.mod(t, sec_in_year) <= 23668200.0:
         TMP_snow = 0.0
 
@@ -179,7 +194,8 @@ def updateS():
     lbl_meanT2e.update()
 
     # do vert res update
-    [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()), retstep=True)
+    [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()),
+                               retstep=True)
     dz_txt = "%0.4f m" % dz_is
     lbl_dz2.configure(text=dz_txt)
     lbl_dz2.update()
@@ -203,7 +219,8 @@ def updateSP():
     lbl_meanT2e.update()
 
     # do vert res update
-    [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()), retstep=True)
+    [zga, dz_is] = np.linspace(0, float(txt_dc.get()), int(txt_zres.get()),
+                               retstep=True)
     dz_txt = "%0.4f m" % dz_is
     lbl_dz2.configure(text=dz_txt)
     lbl_dz2.update()
@@ -212,7 +229,8 @@ def updateSP():
     plt.title("Surface TMP forcing")
     plt.plot(t_range/sec_in_year*12, T_surf(t_range), 'b', label="air TMP")
     plt.plot(t_range/sec_in_year*12, TMP_snow_plot, 'r', label="snow deltaTMP")
-    plt.plot(t_range/sec_in_year*12, T_surf(t_range) + TMP_snow_plot, 'g', label="effective TMP")
+    plt.plot(t_range/sec_in_year*12, T_surf(t_range) + TMP_snow_plot, 'g',
+             label="effective TMP")
     plt.xlabel("Time in months")
     plt.ylabel("TMP in C")
     plt.legend()
@@ -242,7 +260,7 @@ def clicked():
     # time domain
     t_save = int(txt_intP.get())       # years
     t_total = int(txt_rtime.get())      # years
-    t_solve = np.arange(0, t_total+t_save, t_save)
+    t_solve = np.arange(0, t_total+1, 1)
     Nt = len(t_solve)
 
     """ Model Code """
@@ -281,44 +299,71 @@ def clicked():
     # make i minus array
     index_i_minus = np.arange(0, Nz-2)
 
-    t_save_sec = t_save * sec_in_year
-
     # set initial profile
     T_data[0, 0] = T_surf(0) + T_snow(0)
 
+    # which tmp to work with
+    con_Tplot = box_Tplot.current()
+
     # overall time in seconds
     t = 0
-    # time stepping look
+    t_month = sec_in_year/12
+    # time stepping loop
+    u = copy.deepcopy(T_data[0, :])
     for n in range(Nt-1):
-        t_stab = 0
-        u = copy.deepcopy(T_data[n, :])
-        while t_stab < t_save_sec:
-            dt_stab = 0.5 * dz**2 / np.max(D)
-            dt_use = min(dt_stab, t_save_sec - t_stab)
-            t_stab = t_stab + dt_use
-            t = t + dt_use
+        # u = copy.deepcopy(T_data[n, :])
+        u_m = np.zeros((12, Nz))
+        u_m_mean = 0
+        for month in range(12):
+            t_stab = 0
+            while t_stab < t_month:
+                dt_stab = 0.5 * dz**2 / np.max(D)
+                dt_use = min(dt_stab, t_month - t_stab)
+                t_stab = t_stab + dt_use
+                t = t + dt_use
 
-            space_diff = u[index_i_plus] - 2*u[index_i] + u[index_i_minus]
-            # boundary conditions and time step
-            u[index_i] = u[index_i] + D*(dt_use/dz**2)*space_diff
-            # upper BC
-            u[0] = T_surf(t) + T_snow(t)
-            # lower BC
-            # u[Nz-1] = u[Nz-2]
-            u[Nz-1] = u[Nz-2]
-            u[Nz-2] = u[Nz-1] + deltaT_BC
+                space_diff = u[index_i_plus] - 2*u[index_i] + u[index_i_minus]
+                # boundary conditions and time step
+                u[index_i] = u[index_i] + D*(dt_use/dz**2)*space_diff
+                # upper BC
+                u[0] = T_surf(t) + T_snow(t)
+                # lower BC
+                # u[Nz-1] = u[Nz-2]
+                u[Nz-1] = u[Nz-2]
+                u[Nz-2] = u[Nz-1] + deltaT_BC
 
-            time_info = "%0.4f years" % (t/sec_in_year)
-            lbl_time2.configure(text=time_info)
-            lbl_time2.update()
+                time_info = "%0.4f years:" % (t/sec_in_year)
+                lbl_time2.configure(text=time_info)
+                lbl_time2.update()
 
-        T_data[n+1, :] = copy.deepcopy(u)
+            u_m[month, :] = copy.deepcopy(u)
+
+        # have a selection code for which tmp
+        if con_Tplot == 0:
+            u_m_mean = np.mean(u_m, 0)
+        elif con_Tplot == 1:
+            u_m_mean = u_m[0, :]
+        elif con_Tplot == 2:
+            u_m_mean = u_m[6, :]
+        else:
+            print("Annual TMP plotting error")
+        # annual mean debug code
+        # plt.figure()
+        # # for mo in range(12):
+        # #     plt.plot(u_m[mo, :], z)
+        # plt.plot(u_m[0, :], z, 'b')
+        # plt.plot(u_m[6, :], z, 'g')
+        # plt.plot(u_m_mean, z, 'r', linewidth=2)
+        # plt.ylim(z_total, 0)
+        # framename = 'frame_%04d_%04d.png' % (t/sec_in_year, month+1)
+        # plt.savefig(framename)
+        # plt.close()
+        T_data[n+1, :] = copy.deepcopy(u_m_mean)
 
     # save solution
 
     if svSol.get() == 1:
-        np.savetxt(txt_svSol.get(), T_data[-2,:], delimiter=',')
-
+        np.savetxt(txt_svSol.get(), T_data[-2, :], delimiter=',')
 
     # Visuals
 
@@ -328,14 +373,23 @@ def clicked():
         mstring = '.'
 
     if pltintT.get() == 0:
-        pltrange = range(1, len(t_solve))
+        pltrange = range(t_save, Nt, t_save)
     elif pltintT.get() == 1:
-        pltrange = range(0, len(t_solve))
+        pltrange = range(0, Nt, t_save)
 
     plt.figure()
-    plt.title("TMP with depth")
+    if con_Tplot == 0:
+        plt.title("Annual mean TMP with depth")
+    elif con_Tplot == 1:
+        plt.title("January TMP with depth")
+    elif con_Tplot == 2:
+        plt.title("July mean TMP with depth")
+    else:
+        print("Annual TMP plotting figur label error")
+
     for pidx in pltrange:
-        plt.plot(T_data[pidx, :-2], z[:-2], marker=mstring, label=("Year %d" % t_solve[pidx]))
+        plt.plot(T_data[pidx, :-2], z[:-2], marker=mstring,
+                 label=("Year %d" % t_solve[pidx]))
 
     plt.plot([0, 0], [0, z_total], '--k')
     plt.ylim(z_total, 0)
@@ -349,42 +403,42 @@ def clicked():
 
 
 lbl_info = tk.Label(window, text="Model Setup Info:")
-lbl_info.grid(column=1, row=16)
+lbl_info.grid(column=1, row=17)
 
 lbl_dz = tk.Label(window, text="Vertical Resolution dz:")
-lbl_dz.grid(column=0, row=17, sticky="W")
+lbl_dz.grid(column=0, row=18, sticky="W")
 lbl_dz2 = tk.Label(window, text="%0.4f m" % (2))
-lbl_dz2.grid(column=1, row=17)
+lbl_dz2.grid(column=1, row=18)
 
 amean_T = np.mean([float(txt_jaT.get()), float(txt_juT.get())])
 lbl_meanT = tk.Label(window, text="Annual Mean Air TMP:")
-lbl_meanT.grid(column=0, row=18, sticky="W")
+lbl_meanT.grid(column=0, row=19, sticky="W")
 lbl_meanT2 = tk.Label(window, text="%0.2f C" % amean_T)
-lbl_meanT2.grid(column=1, row=18)
+lbl_meanT2.grid(column=1, row=19)
 
 lbl_meanTe = tk.Label(window, text="Annual Mean Effective TMP:")
-lbl_meanTe.grid(column=0, row=19, sticky="W")
+lbl_meanTe.grid(column=0, row=20, sticky="W")
 lbl_meanT2e = tk.Label(window, text="%0.2f C" % amean_T)
-lbl_meanT2e.grid(column=1, row=19)
+lbl_meanT2e.grid(column=1, row=20)
 
 btn = tk.Button(window, text="Update Setup / Plot Input", command=updateSP)
-btn.grid(column=1, row=20)
+btn.grid(column=1, row=21)
 
 lbl_time = tk.Label(window, text="Model Time:")
-lbl_time.grid(column=0, row=21, sticky="W")
+lbl_time.grid(column=0, row=22, sticky="W")
 lbl_time2 = tk.Label(window, text="%0.4f years" % (0))
-lbl_time2.grid(column=1, row=21)
+lbl_time2.grid(column=1, row=22)
 
 btn = tk.Button(window, text="Update Setup and Run Model", command=clicked)
-btn.grid(column=1, row=22)
-
-lbl_space = tk.Label(window, text="")
-lbl_space.grid(column=0, row=23)
+btn.grid(column=1, row=23)
 
 lbl_space = tk.Label(window, text="")
 lbl_space.grid(column=0, row=24)
 
-lbl_CR = tk.Label(window, text="Ver. 4.2 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
-lbl_CR.grid(column=1, row=25)
+lbl_space = tk.Label(window, text="")
+lbl_space.grid(column=0, row=25)
+
+lbl_CR = tk.Label(window, text="Ver. 6.0 - Copyright (C) 2020 ThetaFrame Solutions, GPLv3")
+lbl_CR.grid(column=1, row=26)
 
 window.mainloop()
